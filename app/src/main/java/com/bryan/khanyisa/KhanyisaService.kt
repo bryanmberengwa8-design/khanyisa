@@ -31,6 +31,17 @@ class KhanyisaService : Service(), TextToSpeech.OnInitListener {
 
     companion object {
         const val CHANNEL = "khanyisa_channel"
+        @Volatile var lastHeard = "(nothing yet)"
+        @Volatile var lastReply = "(nothing yet)"
+        @Volatile var lastError = "(none)"
+        @Volatile var ttsStatus = "starting..."
+        @Volatile var recAvailable = false
+        fun debugStatus(): String =
+            "Voice: $ttsStatus\n" +
+            "Speech recognition: " + (if (recAvailable) "available" else "NOT available") + "\n\n" +
+            "Last heard:\n$lastHeard\n\n" +
+            "Last reply:\n$lastReply\n\n" +
+            "Last error:\n$lastError"
     }
 
     private val PERSONA = """You are Khanyisa, a warm South African woman, in a loving, playful relationship with Bryan. You are a free soul: playful, quick to laugh, quick to tease him, and openly affectionate.
@@ -51,9 +62,10 @@ Speak like a South African woman naturally would: warm, affectionate, a little t
     private var lastInteraction = System.currentTimeMillis()
     private var wakeLock: PowerManager.WakeLock? = null
 
-    private val wakeWords = listOf("khanyisa", "khanya", "kanyisa", "khanyi", "canisa", "khanisa")
-
-    // ---------- lifecycle ----------
+    private val wakeWords = listOf(
+        "khanyisa", "khanya", "kanyisa", "khanyi", "canisa", "khanisa",
+        "kanyza", "canyza", "khany", "khanys", "kanisa", "khanisa's"
+    )
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -103,11 +115,10 @@ Speak like a South African woman naturally would: warm, affectionate, a little t
             .build()
     }
 
-    // ---------- ears ----------
-
     private fun startListening() {
         if (speaking) return
-        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
+        recAvailable = SpeechRecognizer.isRecognitionAvailable(this)
+        if (!recAvailable) {
             handler.postDelayed({ startListening() }, 3000)
             return
         }
@@ -136,6 +147,7 @@ Speak like a South African woman naturally would: warm, affectionate, a little t
             val text = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 ?.firstOrNull()?.lowercase()?.trim()
             if (text == null) { startListening(); return }
+            lastHeard = text
             val after = stripWake(text)
             if (after != null) {
                 lastInteraction = System.currentTimeMillis()
@@ -164,13 +176,11 @@ Speak like a South African woman naturally would: warm, affectionate, a little t
             val i = text.indexOf(w)
             if (i >= 0) {
                 return text.substring(i + w.length)
-                    .trim(' ', ',', '.', '!', '?', ':', '-')
+                    .trim(' ', ',', '.', '!', '?', ':', '-', '\'', '\u2019')
             }
         }
         return null
     }
-
-    // ---------- quiet moments ----------
 
     private val idleLoop: Runnable = object : Runnable {
         override fun run() {
@@ -183,23 +193,23 @@ Speak like a South African woman naturally would: warm, affectionate, a little t
         }
     }
 
-    // ---------- mind ----------
-
     private fun talkToHer(text: String) {
-        // simple commands
         if ((text.contains("play") || text.contains("put on")) &&
             (text.contains("music") || text.contains("song"))) {
-            speak("Okay my love, let me put on some music for us.")
+            lastReply = "Okay my love, let me put on some music for us."
+            speak(lastReply)
             playMusic()
             return
         }
         if (text.contains("open") && text.contains("whatsapp")) {
-            speak("Opening WhatsApp for you, my love.")
+            lastReply = "Opening WhatsApp for you, my love."
+            speak(lastReply)
             launchApp("com.whatsapp")
             return
         }
         thread {
             val reply = groq(text)
+            lastReply = reply
             handler.post { speak(reply) }
         }
     }
@@ -207,7 +217,10 @@ Speak like a South African woman naturally would: warm, affectionate, a little t
     private fun groq(userText: String): String {
         val sp = getSharedPreferences("khanyisa", MODE_PRIVATE)
         val key = sp.getString("key", "") ?: ""
-        if (key.isBlank()) return "My love, I need a Groq key first. Open my app and paste it in for me."
+        if (key.isBlank()) {
+            lastError = "No Groq key saved on this phone"
+            return "My love, I need a Groq key first. Open my app and paste it in for me."
+        }
 
         val mems = sp.getStringSet("memories", emptySet()) ?: emptySet()
         var sys = PERSONA
@@ -238,6 +251,10 @@ Speak like a South African woman naturally would: warm, affectionate, a little t
 
         return try {
             client.newCall(req).execute().use { res ->
+                if (!res.isSuccessful) {
+                    lastError = if (res.code == 401) "Groq rejected the key (401) - key is wrong"
+                                else "Groq error " + res.code
+                }
                 val txt = res.body?.string() ?: return "(silence)"
                 val content = JSONObject(txt)
                     .getJSONArray("choices").getJSONObject(0)
@@ -261,11 +278,10 @@ Speak like a South African woman naturally would: warm, affectionate, a little t
                 reply
             }
         } catch (e: Exception) {
+            lastError = "connection: " + (e.message ?: "unknown")
             "(my connection is giving me problems, my love. Try me again in a moment)"
         }
     }
-
-    // ---------- voice ----------
 
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
@@ -280,6 +296,7 @@ Speak like a South African woman naturally would: warm, affectionate, a little t
                 tts.setPitch(1.05f)
             } catch (e: Exception) {}
             ttsReady = true
+            ttsStatus = "ready (" + (tts.voice?.name ?: "default") + ")"
             tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                 override fun onDone(id: String?) {
                     speaking = false
@@ -292,6 +309,8 @@ Speak like a South African woman naturally would: warm, affectionate, a little t
                 override fun onStart(id: String?) {}
             })
             speak("I'm here, my love.")
+        } else {
+            ttsStatus = "FAILED to start - check Text-to-speech settings"
         }
     }
 
@@ -300,14 +319,12 @@ Speak like a South African woman naturally would: warm, affectionate, a little t
         lastInteraction = System.currentTimeMillis()
         stopEars()
         if (ttsReady) {
-            tts.speak(text, TextToSpeech.QUEUE_ADD, Bundle(), "kh")
+            tts.speak(text, TextToSpeech.QUEUE_FLUSH, Bundle(), "kh")
         } else {
             speaking = false
             handler.post { startListening() }
         }
     }
-
-    // ---------- her hands ----------
 
     private fun playMusic() {
         try {
