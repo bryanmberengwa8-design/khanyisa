@@ -7,13 +7,25 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.PowerManager
 import android.provider.Settings
 import android.widget.Button
 import android.widget.EditText
+import android.widget.TextView
 import android.widget.Toast
 
 class MainActivity : Activity() {
+
+    private val handler = Handler(Looper.getMainLooper())
+
+    private val poll = object : Runnable {
+        override fun run() {
+            findViewById<TextView>(R.id.statusView).text = KhanyisaService.debugStatus()
+            handler.postDelayed(this, 800)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,13 +54,22 @@ class MainActivity : Activity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        handler.post(poll)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        handler.removeCallbacks(poll)
+    }
+
     private fun startHer() {
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             Toast.makeText(this, "Allow the microphone first.", Toast.LENGTH_SHORT).show()
             requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), 2)
             return
         }
-        // ask the phone never to put her to sleep
         val pm = getSystemService(PowerManager::class.java)
         if (!pm.isIgnoringBatteryOptimizations(packageName)) {
             try {
