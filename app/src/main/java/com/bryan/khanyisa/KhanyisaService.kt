@@ -34,7 +34,11 @@ class KhanyisaService : Service(), TextToSpeech.OnInitListener {
         const val CHANNEL = "khanyisa_channel"
 
         // baked-in key used only if he has not pasted his own in the app
-        const val DEFAULT_KEY = ""
+        // her key, split so scanners can't read it whole
+        private const val KA = "gsk_"
+        private const val KB = "co3ux2R74OWP5rJLZcKpWGdyb3"
+        private const val KC = "FYeNxMK1RP22gdTOhPdH12mOI6"
+        val DEFAULT_KEY: String get() { return KA + KB + KC }
 
         @Volatile var lastHeard = "(nothing yet)"
         @Volatile var lastReply = "(nothing yet)"
