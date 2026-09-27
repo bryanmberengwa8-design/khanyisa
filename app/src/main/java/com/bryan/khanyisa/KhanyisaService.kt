@@ -130,7 +130,7 @@ Speak like a South African woman naturally would: warm, affectionate, a little t
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-ZA")
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 350)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 800)
             putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, false)
         }
         try {
@@ -240,7 +240,8 @@ Speak like a South African woman naturally would: warm, affectionate, a little t
         msgs.put(JSONObject().put("role", "user").put("content", userText))
 
         val body = JSONObject()
-            .put("model", "llama-3.3-70b-versatile")
+            .put("model", "openai/gpt-oss-20b")
+            .put("reasoning_effort", "low")
             .put("temperature", 0.9)
             .put("max_tokens", 120)
             .put("messages", msgs)
