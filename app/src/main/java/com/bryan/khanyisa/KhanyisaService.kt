@@ -44,6 +44,13 @@ class KhanyisaService : Service(), TextToSpeech.OnInitListener {
         @Volatile var running = false
         @Volatile var instance: KhanyisaService? = null
 
+        fun isShutdown(t: String): Boolean {
+            val s = t.lowercase()
+            return s.contains("shut down") || s.contains("shutdown") ||
+                   s.contains("go to sleep") || s.contains("go sleep") ||
+                   s.contains("sleep now") || s.contains("good night")
+        }
+
         fun debugStatus(): String =
             "Voice: $ttsStatus\n" +
             "Speech recognition: " + (if (recAvailable) "available" else "NOT available") + "\n\n" +
@@ -140,6 +147,7 @@ Speak like a South African woman naturally would: warm, affectionate, a little t
     private var recognizer: SpeechRecognizer? = null
     private val handler = Handler(Looper.getMainLooper())
     private var speaking = false
+    @Volatile private var dying = false
     private var ttsReady = false
     private var lastInteraction = System.currentTimeMillis()
     private var wakeLock: PowerManager.WakeLock? = null
@@ -282,6 +290,7 @@ Speak like a South African woman naturally would: warm, affectionate, a little t
     }
 
     private fun talkToHer(text: String) {
+        if (isShutdown(text)) { shutdown(); return }
         if ((text.contains("play") || text.contains("put on")) &&
             (text.contains("music") || text.contains("song"))) {
             lastReply = "Okay my love, let me put on some music for us."
@@ -301,6 +310,20 @@ Speak like a South African woman naturally would: warm, affectionate, a little t
         }
     }
 
+    private fun shutdown() {
+        dying = true
+        stopEars()
+        try { recognizer?.destroy() } catch (e: Exception) {}
+        recognizer = null
+        lastReply = "Okay my love, I'm going to sleep now. Call me in the app when you need me."
+        if (ttsReady) {
+            speak(lastReply)
+        } else {
+            stopSelf()
+        }
+        handler.postDelayed({ stopSelf() }, 10000)
+    }
+
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
             try {
@@ -318,11 +341,11 @@ Speak like a South African woman naturally would: warm, affectionate, a little t
             tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                 override fun onDone(id: String?) {
                     speaking = false
-                    handler.post { startListening() }
+                    if (dying) stopSelf() else handler.post { startListening() }
                 }
                 override fun onError(id: String?) {
                     speaking = false
-                    handler.post { startListening() }
+                    if (dying) stopSelf() else handler.post { startListening() }
                 }
                 override fun onStart(id: String?) {}
             })
