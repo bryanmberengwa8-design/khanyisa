@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="28dp"
+    android:background="#1C1420">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Khanyisa"
+        android:textSize="36sp"
+        android:textColor="#F6DFE6"
+        android:textStyle="bold"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:text="She listens for you, even when the phone is locked. Just say her name."
+        android:textSize="15sp"
+        android:textColor="#BBA7AD"/>
+
+    <EditText
+        android:id="@+id/keyEdit"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="28dp"
+        android:hint="Paste your free Groq key (gsk_...)"
+        android:textColor="#F3E9EA"
+        android:textColorHint="#7a6a70"
+        android:inputType="textPassword"
+        android:autofillHints="off"/>
+
+    <Button
+        android:id="@+id/saveBtn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="Save her key"
+        android:backgroundTint="#B3546A"
+        android:textColor="#FFFFFF"/>
+
+    <Button
+        android:id="@+id/startBtn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:text="Start listening (she stays on)"
+        android:backgroundTint="#7E3348"
+        android:textColor="#FFFFFF"/>
+
+    <Button
+        android:id="@+id/stopBtn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="Stop her"
+        android:backgroundTint="#3A2A3E"
+        android:textColor="#F3E9EA"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:text="Allow the microphone, and if your phone asks, let her run 'unrestricted' (battery) so she never falls asleep. Then lock the phone and just say: Khanyisa, I'm home."
+        android:textSize="13sp"
+        android:textColor="#9a868c"
+        android:lineSpacingExtra="3dp"/>
+</LinearLayout>
