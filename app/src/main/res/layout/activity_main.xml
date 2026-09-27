@@ -61,6 +61,18 @@
         android:textColor="#F3E9EA"/>
 
     <TextView
+        android:id="@+id/statusView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="24dp"
+        android:background="#241A28"
+        android:padding="14dp"
+        android:text="She is not running yet. Tap Start, then say her name and watch this box - it shows exactly what she heard, what she replied, and any error."
+        android:textSize="12sp"
+        android:textColor="#C9B8BD"
+        android:fontFamily="monospace"/>
+    <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
