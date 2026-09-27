@@ -88,6 +88,12 @@ class MainActivity : Activity() {
         addBubble(t, true)
         input.setText("")
 
+        if (KhanyisaService.isShutdown(t)) {
+            addBubble("(Okay my love, I'm going to sleep now. Tap Start listening when you need me again.)", false)
+            stopService(Intent(this, KhanyisaService::class.java))
+            return
+        }
+
         // make sure she is alive so she can talk back out loud
         if (!KhanyisaService.running) {
             if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
